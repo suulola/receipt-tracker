@@ -1,63 +1,40 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, MapPin, Calendar, Hash, User } from 'lucide-react'
-import type { ReceiptOut } from '@/lib/types/api'
-import { fmt, fmtOrDash, formatDate } from '@/lib/utils'
-import { apiUrl } from '@/lib/config'
+import { ChevronLeft, Info } from 'lucide-react'
+import { fmtOrDash, formatDate } from '@/lib/utils'
+import { useReceiptQuery } from '@/lib/hooks/useReceipts'
+import { StoreMark } from '@/components/StoreMark'
 
-const CATEGORY_COLORS: Record<string, string> = {
-  fruits:         'bg-green-100 text-green-700',
-  vegetables:     'bg-lime-100 text-lime-700',
-  dairy:          'bg-blue-100 text-blue-700',
-  meat:           'bg-red-100 text-red-700',
-  seafood:        'bg-cyan-100 text-cyan-700',
-  bakery:         'bg-amber-100 text-amber-700',
-  beverages:      'bg-sky-100 text-sky-700',
-  snacks:         'bg-orange-100 text-orange-700',
-  frozen:         'bg-indigo-100 text-indigo-700',
-  canned_goods:   'bg-yellow-100 text-yellow-700',
-  household:      'bg-purple-100 text-purple-700',
-  cleaning:       'bg-teal-100 text-teal-700',
-  stationery:     'bg-rose-100 text-rose-700',
-  electronics:    'bg-violet-100 text-violet-700',
-  clothing:       'bg-pink-100 text-pink-700',
-  health_beauty:  'bg-fuchsia-100 text-fuchsia-700',
-  tools_hardware: 'bg-stone-100 text-stone-700',
-  other:          'bg-neutral-100 text-neutral-600',
+function TopBar({ title, onBack }: { title: string; onBack: () => void }) {
+  return (
+    <div className="flex items-center justify-between" style={{ padding: '6px 8px 10px' }}>
+      <button
+        onClick={onBack}
+        style={{
+          width: 40, height: 40, borderRadius: 'var(--r-full)', border: 'none',
+          background: 'transparent', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', color: 'var(--ink-700)', cursor: 'pointer',
+        }}
+        aria-label="Back"
+      >
+        <ChevronLeft size={22} strokeWidth={1.9} />
+      </button>
+      <span style={{ font: '600 17px/22px var(--font-sans)', color: 'var(--ink-900)' }}>{title}</span>
+      <span style={{ width: 40 }} />
+    </div>
+  )
 }
 
 export default function ReceiptDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
-  const [receipt, setReceipt] = useState<ReceiptOut | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const controller = new AbortController()
+  const { data: receipt, isPending, error } = useReceiptQuery(id)
 
-    fetch(`${apiUrl}/receipts/${id}`, { signal: controller.signal })
-      .then((r) => {
-        if (!r.ok) throw new Error(`Server error ${r.status}`)
-        return r.json()
-      })
-      .then((data: ReceiptOut) => {
-        if (!data?.store) throw new Error('Invalid response from server')
-        setReceipt(data)
-      })
-      .catch((e) => {
-        if (e.name !== 'AbortError') setError(e.message)
-      })
-      .finally(() => setLoading(false))
-
-    return () => controller.abort()
-  }, [id])
-
-  if (loading) {
+  if (isPending) {
     return (
-      <div className="flex items-center justify-center min-h-dvh bg-neutral-50 text-neutral-400 text-sm">
+      <div className="flex items-center justify-center min-h-dvh" style={{ background: 'var(--bg)', color: 'var(--ink-400)', font: '400 14px/20px var(--font-sans)' }}>
         Loading…
       </div>
     )
@@ -65,9 +42,9 @@ export default function ReceiptDetailPage() {
 
   if (error || !receipt) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-dvh bg-neutral-50 gap-3 px-6 text-center">
-        <p className="text-neutral-500 text-sm">{error ?? 'Receipt not found'}</p>
-        <button onClick={() => router.back()} className="text-sm text-emerald-600 font-medium">
+      <div className="flex flex-col items-center justify-center min-h-dvh gap-3 px-6 text-center" style={{ background: 'var(--bg)' }}>
+        <p style={{ font: '400 14px/20px var(--font-sans)', color: 'var(--ink-500)' }}>{error?.message ?? 'Receipt not found'}</p>
+        <button onClick={() => router.back()} style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--green-600)', background: 'none', border: 'none', cursor: 'pointer' }}>
           Go back
         </button>
       </div>
@@ -76,116 +53,109 @@ export default function ReceiptDetailPage() {
 
   const store = receipt.store
   const storeName = `${store.name}${store.branch ? ` ${store.branch}` : ''}`
-  const storeLocation = [store.address, store.city, store.province, store.postalCode]
-    .filter(Boolean)
-    .join(', ')
-
-  const purchaseDate = formatDate(receipt.purchaseDate)
-  const totalSavings = receipt.items.reduce((sum, i) => sum + (i.savings ?? 0), 0)
+  const purchaseDateStr = formatDate(receipt.purchaseDate)
+  const totalSavings = receipt.items.reduce((s, i) => s + (i.savings ?? 0), 0)
 
   return (
-    <main className="flex flex-col min-h-dvh bg-neutral-50">
-      <header className="sticky top-0 z-10 bg-white border-b border-neutral-100 px-4 py-4 flex items-center gap-3">
-        <button
-          onClick={() => router.back()}
-          className="text-neutral-400 hover:text-neutral-700 transition-colors"
-        >
-          <ArrowLeft size={20} />
-        </button>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-base font-semibold text-neutral-900 truncate">{storeName}</h1>
-          {purchaseDate && <p className="text-xs text-neutral-400">{purchaseDate}</p>}
-        </div>
-        {fmt(receipt.total) && (
-          <span className="text-base font-bold text-neutral-900">{fmt(receipt.total)}</span>
-        )}
-      </header>
+    <main className="flex flex-col min-h-dvh" style={{ background: 'var(--bg)' }}>
+      <div style={{ padding: '4px 12px 0' }}>
+        <TopBar title="Receipt" onBack={() => router.back()} />
+      </div>
 
-      <div className="flex-1 overflow-y-auto pb-8">
-        <div className="mx-4 mt-4 bg-white rounded-2xl shadow-sm overflow-hidden">
-          {storeLocation && (
-            <div className="flex items-start gap-3 px-4 py-3 border-b border-neutral-100">
-              <MapPin size={16} className="text-neutral-400 mt-0.5 shrink-0" />
-              <p className="text-sm text-neutral-600">{storeLocation}</p>
-            </div>
-          )}
-          {purchaseDate && (
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-neutral-100">
-              <Calendar size={16} className="text-neutral-400 shrink-0" />
-              <p className="text-sm text-neutral-600">{purchaseDate}</p>
-            </div>
-          )}
-          {receipt.transactionNumber && (
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-neutral-100">
-              <Hash size={16} className="text-neutral-400 shrink-0" />
-              <p className="text-sm text-neutral-600">Txn #{receipt.transactionNumber}</p>
-            </div>
-          )}
-          {receipt.customerName && (
-            <div className="flex items-center gap-3 px-4 py-3">
-              <User size={16} className="text-neutral-400 shrink-0" />
-              <p className="text-sm text-neutral-600">{receipt.customerName}</p>
-            </div>
-          )}
-        </div>
-
-        <div className="mx-4 mt-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
-            {receipt.items.length} item{receipt.items.length !== 1 ? 's' : ''}
-          </p>
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden divide-y divide-neutral-100">
-            {receipt.items.map((item) => (
-              <div key={item.id} className="px-4 py-3 flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-neutral-900">{item.rawName}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${CATEGORY_COLORS[item.categorySlug] ?? CATEGORY_COLORS.other}`}>
-                      {item.categoryLabel}
-                    </span>
-                    {item.quantity != null && (
-                      <span className="text-xs text-neutral-400">
-                        {item.quantity}{item.unit ? ` ${item.unit}` : ''}
-                        {item.unitPrice != null ? ` @ ${fmtOrDash(item.unitPrice)}/${item.unit ?? 'ea'}` : ''}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-semibold text-neutral-900">{fmtOrDash(item.totalPrice)}</p>
-                  {item.savings != null && item.savings > 0 && (
-                    <p className="text-xs text-emerald-600">-{fmtOrDash(item.savings)}</p>
-                  )}
-                </div>
-              </div>
-            ))}
+      <div className="flex-1 overflow-y-auto pb-8" style={{ padding: '0 var(--gutter)' }}>
+        {/* Store hero */}
+        <div className="flex items-center" style={{ gap: 13, paddingBottom: 18 }}>
+          <StoreMark name={store.name} size={52} />
+          <div className="flex-1 min-w-0">
+            <h2 style={{ font: '700 21px/26px var(--font-sans)', letterSpacing: '-0.01em', color: 'var(--ink-900)' }}>{storeName}</h2>
+            <span style={{ font: '500 12px/16px var(--font-sans)', color: 'var(--ink-500)', marginTop: 2, display: 'block' }}>
+              {[purchaseDateStr, store.city].filter(Boolean).join(' · ')}
+              {receipt.items.length > 0 && ` · ${receipt.items.length} items`}
+            </span>
+          </div>
+          <div className="flex flex-col items-end" style={{ flexShrink: 0 }}>
+            <span style={{ font: '600 11px/14px var(--font-sans)', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-400)' }}>Total</span>
+            {receipt.total != null && (
+              <span style={{ font: '600 22px/26px var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--ink-900)', letterSpacing: '-0.01em' }}>
+                ${receipt.total.toFixed(2)}
+              </span>
+            )}
           </div>
         </div>
 
-        <div className="mx-4 mt-4 bg-white rounded-2xl shadow-sm overflow-hidden">
+        {/* Items */}
+        <div style={{
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 'var(--r-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)',
+          marginBottom: 12,
+        }}>
+          {receipt.items.map((item, i) => (
+            <div
+              key={item.id}
+              className="flex items-center"
+              style={{ gap: 12, padding: '13px 15px', borderTop: i > 0 ? '1px solid var(--border)' : undefined }}
+            >
+              <div className="flex-1 min-w-0">
+                <p style={{ font: '500 16px/24px var(--font-sans)', color: 'var(--ink-900)' }}>{item.rawName}</p>
+                {item.quantity != null && (
+                  <p style={{ font: '500 12px/16px var(--font-sans)', color: 'var(--ink-500)', marginTop: 1 }}>
+                    {item.quantity}{item.unit ? ` ${item.unit}` : ''}
+                    {item.unitPrice != null ? ` @ ${fmtOrDash(item.unitPrice)}/${item.unit ?? 'ea'}` : ''}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col items-end" style={{ gap: 2, flexShrink: 0 }}>
+                <span style={{ font: '500 14px/18px var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--ink-900)' }}>
+                  {fmtOrDash(item.totalPrice)}
+                </span>
+                {item.savings != null && item.savings > 0 && (
+                  <span style={{ font: '500 12px/16px var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--green-600)' }}>
+                    −{fmtOrDash(item.savings)}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Totals footer */}
+        <div style={{
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 'var(--r-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)',
+          marginBottom: 12,
+        }}>
           {totalSavings > 0 && (
-            <div className="flex justify-between px-4 py-3 border-b border-neutral-100">
-              <span className="text-sm text-emerald-600">Total savings</span>
-              <span className="text-sm font-medium text-emerald-600">-{fmtOrDash(totalSavings)}</span>
+            <div className="flex justify-between" style={{ padding: '12px 15px', borderBottom: '1px solid var(--border)' }}>
+              <span style={{ font: '400 14px/20px var(--font-sans)', color: 'var(--green-700)' }}>Total savings</span>
+              <span style={{ font: '500 14px/18px var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--green-700)' }}>−{fmtOrDash(totalSavings)}</span>
             </div>
           )}
           {receipt.subtotal != null && (
-            <div className="flex justify-between px-4 py-3 border-b border-neutral-100">
-              <span className="text-sm text-neutral-600">Subtotal</span>
-              <span className="text-sm text-neutral-900">{fmtOrDash(receipt.subtotal)}</span>
+            <div className="flex justify-between" style={{ padding: '12px 15px', borderBottom: '1px solid var(--border)' }}>
+              <span style={{ font: '400 14px/20px var(--font-sans)', color: 'var(--ink-600)' }}>Subtotal</span>
+              <span style={{ font: '500 14px/18px var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--ink-900)' }}>{fmtOrDash(receipt.subtotal)}</span>
             </div>
           )}
           {receipt.tax != null && (
-            <div className="flex justify-between px-4 py-3 border-b border-neutral-100">
-              <span className="text-sm text-neutral-600">Tax (HST/GST)</span>
-              <span className="text-sm text-neutral-900">{fmtOrDash(receipt.tax)}</span>
+            <div className="flex justify-between" style={{ padding: '12px 15px', borderBottom: '1px solid var(--border)' }}>
+              <span style={{ font: '400 14px/20px var(--font-sans)', color: 'var(--ink-600)' }}>Tax (HST/GST)</span>
+              <span style={{ font: '500 14px/18px var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--ink-900)' }}>{fmtOrDash(receipt.tax)}</span>
             </div>
           )}
           {receipt.total != null && (
-            <div className="flex justify-between px-4 py-4">
-              <span className="text-base font-semibold text-neutral-900">Total</span>
-              <span className="text-base font-bold text-neutral-900">{fmtOrDash(receipt.total)}</span>
+            <div className="flex justify-between" style={{ padding: '14px 15px' }}>
+              <span style={{ font: '600 17px/22px var(--font-sans)', color: 'var(--ink-900)' }}>Total</span>
+              <span style={{ font: '600 17px/22px var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--ink-900)' }}>{fmtOrDash(receipt.total)}</span>
             </div>
           )}
+        </div>
+
+        {/* Footer hint */}
+        <div className="flex items-center" style={{ gap: 7, padding: '12px 4px' }}>
+          <Info size={15} color="var(--ink-400)" strokeWidth={1.9} />
+          <span style={{ font: '500 12px/16px var(--font-sans)', color: 'var(--ink-400)' }}>
+            Go to Search to compare prices across stores.
+          </span>
         </div>
       </div>
     </main>

@@ -4,13 +4,14 @@ import { useState } from 'react'
 import { CameraCapture } from '@/components/scanner/CameraCapture'
 import { ReceiptPreview } from '@/components/scanner/ReceiptPreview'
 import type { Receipt } from '@/lib/schemas/receipt'
-import { apiUrl } from '@/lib/config'
+import { useSaveReceiptMutation } from '@/lib/hooks/useReceipts'
 
 type PageState = 'scan' | 'preview' | 'saved'
 
 export default function ScanPage() {
   const [pageState, setPageState] = useState<PageState>('scan')
   const [receipt, setReceipt] = useState<Receipt | null>(null)
+  const saveReceiptMutation = useSaveReceiptMutation()
 
   function handleReceiptExtracted(r: Receipt) {
     setReceipt(r)
@@ -18,15 +19,7 @@ export default function ScanPage() {
   }
 
   async function handleConfirm(confirmed: Receipt) {
-    const res = await fetch(`${apiUrl}/receipts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(confirmed),
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.detail ?? `Save failed (${res.status})`)
-    }
+    await saveReceiptMutation.mutateAsync(confirmed)
     setPageState('saved')
   }
 

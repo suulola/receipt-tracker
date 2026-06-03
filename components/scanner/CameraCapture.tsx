@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Camera, Upload, Plus, Check, X, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ImageStrip } from './ImageStrip'
+import { useOcrMutation } from '@/lib/hooks/useOcr'
 import type { Receipt } from '@/lib/schemas/receipt'
 
 type ScanState = 'choosing' | 'camera' | 'capturing' | 'processing'
@@ -23,6 +24,7 @@ export function CameraCapture({ onReceiptExtracted }: CameraCaptureProps) {
   const [images, setImages] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [cameraReady, setCameraReady] = useState(false)
+  const { mutateAsync: runOcr } = useOcrMutation()
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop())
@@ -98,23 +100,14 @@ export function CameraCapture({ onReceiptExtracted }: CameraCaptureProps) {
     setState('processing')
     setError(null)
     try {
-      const res = await fetch('/api/ocr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ images }),
-      })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.error ?? `Server error ${res.status}`)
-      }
-      const receipt = await res.json()
+      const receipt = await runOcr(images)
       stopCamera()
       onReceiptExtracted(receipt)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
       setState('capturing')
     }
-  }, [images, stopCamera, onReceiptExtracted])
+  }, [images, stopCamera, onReceiptExtracted, runOcr])
 
   const reset = useCallback(() => {
     stopCamera()

@@ -47,3 +47,43 @@ export interface ReceiptListItem {
   itemCount: number
   createdAt: string
 }
+
+export interface ItemSummary {
+  normalizedName: string
+  categorySlug: string
+  categoryLabel: string
+  purchaseCount: number
+}
+
+export interface CompareResult {
+  receiptItemId: string
+  receiptId: string
+  storeName: string
+  storeBranch: string | null
+  storeCity: string | null
+  purchaseDate: string | null
+  rawName: string
+  normalizedName: string
+  categorySlug: string
+  quantity: number | null
+  unit: string | null
+  unitPrice: number | null
+  totalPrice: number
+  savings: number | null
+  pricePerUnit: number | null
+}
+
+export interface CompareResponse {
+  query: string
+  results: CompareResult[]
+}
+
+export interface StoreGroup {
+  key: string
+  storeName: string
+  storeBranch: string | null
+  storeCity: string | null
+  rows: CompareResult[]
+  bestPricePerUnit: number | null
+  bestUnit: string | null
+}

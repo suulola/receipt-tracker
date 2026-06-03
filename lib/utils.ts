@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import type { ReceiptListItem } from '@/lib/types/api'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -20,6 +21,24 @@ export function formatDate(dateStr: string | null | undefined): string | null {
   if (!dateStr) return null
   const d = new Date(dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`)
   return d.toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+/** Parse a price string into a non-negative number, or null if invalid. */
+export function parsePrice(value: string): number | null {
+  const n = parseFloat(value)
+  return isNaN(n) || n < 0 ? null : n
+}
+
+/** Group receipts by purchase date into labelled sections for display. */
+export function groupByDate(receipts: ReceiptListItem[]): [string, ReceiptListItem[]][] {
+  const groups = new Map<string, ReceiptListItem[]>()
+  for (const r of receipts) {
+    const raw = r.purchaseDate ?? r.createdAt
+    const label = dateGroupLabel(raw)
+    if (!groups.has(label)) groups.set(label, [])
+    groups.get(label)?.push(r)
+  }
+  return Array.from(groups.entries())
 }
 
 /** Group an ISO date string into a human-readable label: Today, Yesterday, or a month/day string. */

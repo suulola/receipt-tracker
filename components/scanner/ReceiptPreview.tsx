@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { Trash2, Plus, ChevronDown, ArrowLeft, Check } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { fmtOrDash } from '@/lib/utils'
+import { cn, fmtOrDash, parsePrice } from '@/lib/utils'
 import {
   type Receipt,
   type ReceiptItem,
@@ -16,11 +15,6 @@ interface ReceiptPreviewProps {
   receipt: Receipt
   onConfirm: (receipt: Receipt) => Promise<void>
   onRescan: () => void
-}
-
-function parsePrice(value: string): number | null {
-  const n = parseFloat(value)
-  return isNaN(n) || n < 0 ? null : n
 }
 
 function ItemRow({
