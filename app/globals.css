@@ -50,7 +50,15 @@
   --shadow-md: 0 2px 4px rgba(27,26,22,.04), 0 8px 24px rgba(27,26,22,.07);
 
   --gutter: 20px;
-  --tabbar-h: 84px;
+  --tabbar-h: 84px;   /* mobile: height of bottom tab bar */
+  --sidebar-w: 250px; /* desktop: sidebar width */
+}
+
+/* Desktop: sidebar replaces tab bar → no bottom padding needed */
+@media (min-width: 768px) {
+  :root {
+    --tabbar-h: 0px;
+  }
 }
 
 @theme inline {

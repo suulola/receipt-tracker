@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { BottomTabBar, type TabId } from './BottomTabBar'
+import { Sidebar } from './Sidebar'
 
 const TAB_ROUTES: Record<string, TabId> = {
   '/': 'home',
@@ -14,5 +15,10 @@ export function ConditionalBottomNav() {
   const pathname = usePathname()
   const activeTab = TAB_ROUTES[pathname]
   if (!activeTab) return null
-  return <BottomTabBar active={activeTab} />
+  return (
+    <>
+      <Sidebar active={activeTab} />
+      <BottomTabBar active={activeTab} />
+    </>
+  )
 }

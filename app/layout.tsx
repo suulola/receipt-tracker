@@ -28,8 +28,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${hanken.variable} ${spline.variable} h-full`}>
       <body className="min-h-full flex flex-col">
         <Providers>
-          {children}
           <ConditionalBottomNav />
+          {/* On desktop, shift content right to clear the fixed 250px sidebar */}
+          <div className="md:pl-[250px] flex-1 flex flex-col">
+            {children}
+          </div>
         </Providers>
       </body>
     </html>

@@ -8,7 +8,7 @@ export type TabId = 'home' | 'history' | 'search' | 'profile'
 export function BottomTabBar({ active }: { active: TabId }) {
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-20"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-20"
       style={{
         height: 'var(--tabbar-h)',
         background: 'rgba(255,255,255,0.92)',
