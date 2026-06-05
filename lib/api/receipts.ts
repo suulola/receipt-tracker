@@ -18,3 +18,7 @@ export function saveReceipt(receipt: Receipt): Promise<ReceiptOut> {
     body: JSON.stringify(receipt),
   })
 }
+
+export function deleteReceipt(id: string): Promise<void> {
+  return apiFetch(`/receipts/${id}`, { method: 'DELETE' })
+}

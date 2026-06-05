@@ -26,7 +26,7 @@ function TallyGlyph() {
   )
 }
 
-export function Sidebar({ active }: { active: TabId }) {
+export function Sidebar({ active }: { active?: TabId }) {
   return (
     <aside
       className="hidden md:flex flex-col"

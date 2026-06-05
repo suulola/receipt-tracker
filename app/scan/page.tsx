@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { CameraCapture } from '@/components/scanner/CameraCapture'
 import { ReceiptPreview } from '@/components/scanner/ReceiptPreview'
 import type { Receipt } from '@/lib/schemas/receipt'
@@ -59,6 +60,12 @@ export default function ScanPage() {
           >
             Scan Another Receipt
           </button>
+          <Link
+            href="/"
+            className="mt-2 px-6 py-3 text-neutral-500 rounded-xl font-medium text-sm hover:text-neutral-700 transition-colors"
+          >
+            Go Home
+          </Link>
         </div>
       )}
     </main>

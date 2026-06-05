@@ -190,6 +190,8 @@ export function ReceiptPreview({ receipt, onConfirm, onRescan }: ReceiptPreviewP
     setSaving(true)
     try {
       await onConfirm(data)
+    } catch (e) {
+      setValidationError(e instanceof Error ? e.message : 'Failed to save receipt. Please try again.')
     } finally {
       setSaving(false)
     }
